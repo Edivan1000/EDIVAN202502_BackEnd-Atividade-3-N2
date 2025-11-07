@@ -1,33 +1,72 @@
 package com.br.controller;
 
-import com.br.model.ProdutoCatalogo;
-import com.br.model.ProdutoOpcao;
-import com.br.service.ProdutoService;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.*;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
-@RestController // 1. Diz ao Spring que esta classe manipula requisições REST
-@RequestMapping("/api/produtos") // 2. Define o prefixo da URL para todos os métodos
-@CrossOrigin(origins = "http://localhost:4200") // 3. Adicione agora para o futuro (CORS)
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import com.br.exception.ResourceNotFoundException;
+import com.br.model.Produto;
+import com.br.repository.ProdutoRepository;
+
+@RestController
+@RequestMapping("/cproduto")
+@CrossOrigin(origins = "*")
 public class ProdutoController {
 
     @Autowired
-    private ProdutoService produtoService;
+    private ProdutoRepository produtoRepository;
 
-    // GET /api/produtos/catalogo
-    // Retorna todos os produtos base (A1, A3)
-    @GetMapping("/catalogo")
-    public List<ProdutoCatalogo> listarProdutosBase() {
-        return produtoService.listarTodosProdutos();
+    // ➤ Listar todos
+    @GetMapping("/produto")
+    public List<Produto> listar() {
+        // Exemplo de endpoint completo: http://localhost:8080/cproduto/produto
+        return produtoRepository.findAll();
     }
 
-    // GET /api/produtos/opcoes?catalogoId=1
-    // CRUCIAL: Retorna as opções de validade/preço de um produto específico
-    @GetMapping("/opcoes")
-    public List<ProdutoOpcao> buscarOpcoesPorProduto(@RequestParam Long catalogoId) {
-        return produtoService.buscarOpcoesPorProduto(catalogoId);
+    // ➤ Consultar por ID
+    @GetMapping("/produto/{id}")
+    public ResponseEntity<Produto> consultar(@PathVariable Long id) {
+        Produto produto = produtoRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Produto não encontrado."));
+        return ResponseEntity.ok(produto);
     }
-    
-    // Opcional: Implementar CRUD para ADMIN gerenciar o catálogo se necessário
+
+    // ➤ Incluir
+    @PostMapping("/produto")
+    public Produto incluir(@RequestBody Produto produto) {
+        return produtoRepository.save(produto);
+    }
+
+    // ➤ Alterar
+    @PutMapping("/produto/{id}")
+    public ResponseEntity<Produto> alterar(@PathVariable Long id, @RequestBody Produto produto) {
+        Produto existente = produtoRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Produto não encontrado."));
+
+        existente.setNome(produto.getNome());
+        existente.setDescricao(produto.getDescricao());
+        existente.setPrecoBase(produto.getPrecoBase());
+        existente.setAtivo(produto.isAtivo());
+        existente.setOpcoes(produto.getOpcoes());
+
+        Produto atualizado = produtoRepository.save(existente);
+        return ResponseEntity.ok(atualizado);
+    }
+
+    // ➤ Excluir
+    @DeleteMapping("/produto/{id}")
+    public ResponseEntity<Map<String, Boolean>> excluir(@PathVariable Long id) {
+        Produto existente = produtoRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Produto não encontrado."));
+
+        produtoRepository.delete(existente);
+
+        Map<String, Boolean> resposta = new HashMap<>();
+        resposta.put("Produto excluído!", true);
+        return ResponseEntity.ok(resposta);
+    }
 }

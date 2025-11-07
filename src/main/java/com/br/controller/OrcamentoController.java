@@ -1,50 +1,109 @@
 package com.br.controller;
 
-import com.br.model.Orcamento;
-import com.br.service.OrcamentoService;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import java.util.List;
+
+import com.br.exception.ResourceNotFoundException;
+import com.br.model.Orcamento;
+import com.br.model.Cliente;
+import com.br.model.CertificadoDigital;
+import com.br.repository.OrcamentoRepository;
+import com.br.repository.ClienteRepository;
+import com.br.repository.CertificadoDigitalRepository;
 
 @RestController
-@RequestMapping("/api/orcamentos")
+@RequestMapping("/corcamento")
+@CrossOrigin(origins = "*")
 public class OrcamentoController {
 
     @Autowired
-    private OrcamentoService orcamentoService;
+    private OrcamentoRepository autorep;
 
-    // POST /api/orcamentos
-    // Incluir / Alterar o Orçamento COMPLETO (Mestre + Detalhes)
-    // O formulário principal do Angular enviará o ORCAMENTO inteiro aqui.
-    @PostMapping
-    public ResponseEntity<Orcamento> salvarOrcamentoCompleto(@RequestBody Orcamento orcamento) {
-        try {
-            Orcamento orcamentoSalvo = orcamentoService.salvarOrcamento(orcamento);
-            return ResponseEntity.ok(orcamentoSalvo);
-        } catch (Exception e) {
-            // Em um ambiente real, você trataria erros específicos
-            return ResponseEntity.badRequest().build();
+    @Autowired
+    private ClienteRepository clienteRepository;
+
+    @Autowired
+    private CertificadoDigitalRepository certificadoDigitalRepository;
+
+    // Listar todos
+    @GetMapping("/orcamento")
+    public List<Orcamento> listar() {
+        return autorep.findAll();
+    }
+
+    // Consultar por ID
+    @GetMapping("/orcamento/{id}")
+    public ResponseEntity<Orcamento> consultar(@PathVariable Long id) {
+        Orcamento auto = autorep.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Orçamento não encontrado."));
+        return ResponseEntity.ok(auto);
+    }
+
+    // Incluir novo
+    @PostMapping("/orcamento")
+    public ResponseEntity<Orcamento> incluir(@RequestBody Orcamento orcamento) {
+        // Buscar cliente existente
+        Cliente cliente = clienteRepository.findById(orcamento.getCliente().getId())
+                .orElseThrow(() -> new RuntimeException("Cliente não encontrado"));
+
+        // Buscar certificados existentes
+        List<CertificadoDigital> certificados = new ArrayList<>();
+        for (CertificadoDigital cert : orcamento.getCertificados()) {
+            CertificadoDigital existente = certificadoDigitalRepository.findById(cert.getId())
+                    .orElseThrow(() -> new RuntimeException("Certificado não encontrado"));
+            certificados.add(existente);
         }
+
+        // Reatribuir
+        orcamento.setCliente(cliente);
+        orcamento.setCertificados(certificados);
+
+        Orcamento salvo = autorep.save(orcamento);
+        return ResponseEntity.ok(salvo);
     }
 
-    // GET /api/orcamentos/1
-    // Consultar (Busca um orçamento completo com todos os seus detalhes)
-    @GetMapping("/{id}")
-    public ResponseEntity<Orcamento> consultarOrcamento(@PathVariable Long id) {
-        return orcamentoService.buscarOrcamentoCompleto(id)
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
+    // Alterar existente
+    @PutMapping("/orcamento/{id}")
+    public ResponseEntity<Orcamento> alterar(@PathVariable Long id, @RequestBody Orcamento orcamento) {
+        Orcamento auto = autorep.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Orçamento não encontrado."));
+
+        auto.setDataSolicitacao(orcamento.getDataSolicitacao());
+        auto.setValorTotal(orcamento.getValorTotal());
+
+        // Atualiza cliente e certificados
+        Cliente cliente = clienteRepository.findById(orcamento.getCliente().getId())
+                .orElseThrow(() -> new RuntimeException("Cliente não encontrado"));
+        auto.setCliente(cliente);
+
+        List<CertificadoDigital> certificados = new ArrayList<>();
+        for (CertificadoDigital cert : orcamento.getCertificados()) {
+            CertificadoDigital existente = certificadoDigitalRepository.findById(cert.getId())
+                    .orElseThrow(() -> new RuntimeException("Certificado não encontrado"));
+            certificados.add(existente);
+        }
+        auto.setCertificados(certificados);
+
+        Orcamento atualizado = autorep.save(auto);
+        return ResponseEntity.ok(atualizado);
     }
 
-    // GET /api/orcamentos
-    // Listar (Todos os orçamentos)
-    @GetMapping
-    public List<Orcamento> listarOrcamentos() {
-        return orcamentoService.listarOrcamentos(); 
-        // Nota: Você precisaria implementar este método no OrcamentoService
-        // para buscar a lista simples de orçamentos.
+    // Excluir
+    @DeleteMapping("/orcamento/{id}")
+    public ResponseEntity<Map<String, Boolean>> excluir(@PathVariable Long id) {
+        Orcamento auto = autorep.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Orçamento não encontrado."));
+
+        autorep.delete(auto);
+
+        Map<String, Boolean> resposta = new HashMap<>();
+        resposta.put("Orçamento excluído!", true);
+        return ResponseEntity.ok(resposta);
     }
-    
-    // Implementar métodos DELETE para Excluir o orçamento completo.
 }

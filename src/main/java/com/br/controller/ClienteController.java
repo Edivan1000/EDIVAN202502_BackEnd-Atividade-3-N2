@@ -1,53 +1,76 @@
 package com.br.controller;
 
-import com.br.model.Cliente;
-import com.br.service.ClienteService;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import java.util.List;
-import java.util.Collections;
+
+import com.br.exception.ResourceNotFoundException;
+import com.br.model.Cliente;
+import com.br.repository.ClienteRepository;
 
 @RestController
-@RequestMapping("/api/clientes")
-@CrossOrigin(origins = "http://localhost:4200")
+@RequestMapping("/ccliente")
+@CrossOrigin(origins = "*")
 public class ClienteController {
 
+    // Injeção do repositório JPA
     @Autowired
-    private ClienteService clienteService;
+    private ClienteRepository autorep;
 
-    // POST /api/clientes
-    // Incluir um novo cliente (ou atualizar se o ID vier preenchido)
-    @PostMapping
-    public ResponseEntity<Cliente> incluirCliente(@RequestBody Cliente cliente) {
-        Cliente novoCliente = clienteService.salvarCliente(cliente);
-        return ResponseEntity.ok(novoCliente);
-    }
-    
-    // GET /api/clientes/1
-    // Consultar (Buscar por ID)
-    @GetMapping("/{id}")
-    public ResponseEntity<Cliente> consultarCliente(@PathVariable Long id) {
-        return clienteService.buscarPorId(id)
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
+    // Listar todos os clientes
+    @GetMapping("/cliente")
+    public List<Cliente> listar() {
+        // Exemplo de acesso: http://localhost:8080/ccliente/cliente
+        return autorep.findAll();
     }
 
-    // GET /api/clientes
-    // CORREÇÃO: Usando ResponseEntity<List<Cliente>> para garantir o status 200 e o corpo JSON [].
-    @GetMapping
-    public ResponseEntity<List<Cliente>> listarClientes() {
-        // Assume que listarClientes() retorna List<Cliente> e não null.
-        List<Cliente> clientes = clienteService.listarClientes();
-        
-        // Se a lista for nula (improvável se o Service estiver correto), retorna uma lista vazia.
-        if (clientes == null) {
-            clientes = Collections.emptyList();
-        }
-        
-        // Retorna a lista com status 200 OK. Isso garante o corpo JSON: [] se vazio.
-        return ResponseEntity.ok(clientes); 
+    // Consultar cliente por ID
+    @GetMapping("/cliente/{id}")
+    public ResponseEntity<Cliente> consultar(@PathVariable Long id) {
+        Cliente auto = autorep.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Cliente não encontrado."));
+        return ResponseEntity.ok(auto);
     }
-    
-    // Implementar métodos PUT (Alterar) e DELETE (Excluir) para completar o CRUD
+
+    // Incluir novo cliente
+    @PostMapping("/cliente")
+    public Cliente incluir(@RequestBody Cliente cliente) {
+        return autorep.save(cliente);
+    }
+
+    // Excluir cliente
+    @DeleteMapping("/cliente/{id}")
+    public ResponseEntity<Map<String, Boolean>> excluir(@PathVariable Long id) {
+        Cliente auto = autorep.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Cliente não encontrado."));
+
+        autorep.delete(auto);
+
+        Map<String, Boolean> resposta = new HashMap<>();
+        resposta.put("Cliente excluído!", true);
+        return ResponseEntity.ok(resposta);
+    }
+
+    // Alterar cliente existente
+    @PutMapping("/cliente/{id}")
+    public ResponseEntity<Cliente> alterar(@PathVariable Long id, @RequestBody Cliente cliente) {
+
+        Cliente auto = autorep.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Cliente não encontrado."));
+
+        // Atualiza os campos principais do cliente
+        auto.setNome(cliente.getNome());
+        auto.setEmail(cliente.getEmail());
+        auto.setTelefone(cliente.getTelefone());
+        auto.setCpfCnpj(cliente.getCpfCnpj());
+        auto.setEmpresas(cliente.getEmpresas());
+        auto.setOrcamentos(cliente.getOrcamentos());
+
+        Cliente atualizado = autorep.save(auto);
+        return ResponseEntity.ok(atualizado);
+    }
 }

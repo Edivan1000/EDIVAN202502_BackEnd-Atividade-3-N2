@@ -1,7 +1,11 @@
 package com.br.model;
 
-import com.fasterxml.jackson.annotation.JsonIgnore; // NOVO IMPORT NECESSÁRIO
 import jakarta.persistence.*;
+import java.math.BigDecimal;
+import java.util.List;
+
+import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 @Entity
 @Table(name = "produto_opcao")
@@ -11,54 +15,79 @@ public class ProdutoOpcao {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "validade_meses")
-    private Integer validadeMeses; // 12, 24, 36
+    // Nome da opção (ex: "Validade de 12 meses", "Token A3", etc.)
+    @Column(nullable = false)
+    private String nome;
 
-    private Double preco;
+    // Descrição detalhada da opção
+    @Column(length = 255)
+    private String descricao;
+    
+    @Column(nullable = false)
+    private Boolean ativo = true;
 
-    // Relacionamento N:1 com ProdutoCatalogo (lado proprietário - Owner)
-    // CORREÇÃO: Usar @JsonIgnore para cortar o loop de serialização JSON.
-    @JsonIgnore // <--- ADICIONADO PARA RESOLVER O SyntaxError
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "produto_catalogo_id", nullable = false)
-    private ProdutoCatalogo catalogo;
+    // Preço adicional que essa opção acrescenta ao produto
+    @Column(name = "preco_adicional", precision = 10, scale = 2)
+    private BigDecimal precoAdicional;
 
-    // Construtor padrão (útil)
-    public ProdutoOpcao() {
+    // Relação com Produto (muitas opções para um produto)
+    @ManyToOne
+    @JoinColumn(name = "produto_id")
+    @JsonBackReference
+    private Produto produto;
+
+    @ManyToOne
+    @JoinColumn(name="opcao_validade_id", nullable=false)
+    private OpcaoValidade opcaoValidade;
+    
+    // Relação 1:N com CertificadoDigital (um opcional pode gerar vários certificados)
+    @OneToMany(mappedBy = "produtoOpcao", cascade = CascadeType.ALL)
+    @JsonIgnore
+    private List<CertificadoDigital> certificados;
+
+    // Construtores
+    public ProdutoOpcao() {}
+
+    public ProdutoOpcao(String nome, String descricao, BigDecimal precoAdicional, Produto produto) {
+        this.nome = nome;
+        this.descricao = descricao;
+        this.precoAdicional = precoAdicional;
+        this.produto = produto;
     }
 
-    // --- Getters e Setters ---
+    // Getters e Setters
+    public Long getId() { return id; }
+    public void setId(Long id) { this.id = id; }
+
+    public String getNome() { return nome; }
+    public void setNome(String nome) { this.nome = nome; }
+
+    public String getDescricao() { return descricao; }
+    public void setDescricao(String descricao) { this.descricao = descricao; }
+
+    public BigDecimal getPrecoAdicional() { return precoAdicional; }
+    public void setPrecoAdicional(BigDecimal precoAdicional) { this.precoAdicional = precoAdicional; }
+
+    public Produto getProduto() { return produto; }
+    public void setProduto(Produto produto) { this.produto = produto; }
+
+    public List<CertificadoDigital> getCertificados() { return certificados; }
+    public void setCertificados(List<CertificadoDigital> certificados) { this.certificados = certificados; }
     
-	public Long getId() {
-		return id;
-	}
 
-	public void setId(Long id) {
-		this.id = id;
-	}
+    public Boolean getAtivo() {
+    return ativo;
+}
 
-	public Integer getValidadeMeses() {
-		return validadeMeses;
-	}
+    public void setAtivo(Boolean ativo) {
+    this.ativo = ativo;
+}
+    
+    public OpcaoValidade getOpcaoValidade() {
+        return opcaoValidade;
+    }
 
-	public void setValidadeMeses(Integer validadeMeses) {
-		this.validadeMeses = validadeMeses;
-	}
-
-	public Double getPreco() {
-		return preco;
-	}
-
-	public void setPreco(Double preco) {
-		this.preco = preco;
-	}
-
-    // Mesmo com @JsonIgnore, o getter é mantido, mas não será serializado.
-	public ProdutoCatalogo getCatalogo() {
-		return catalogo;
-	}
-
-	public void setCatalogo(ProdutoCatalogo catalogo) {
-		this.catalogo = catalogo;
-	}
+    public void setOpcaoValidade(OpcaoValidade opcaoValidade) {
+        this.opcaoValidade = opcaoValidade;
+    }
 }

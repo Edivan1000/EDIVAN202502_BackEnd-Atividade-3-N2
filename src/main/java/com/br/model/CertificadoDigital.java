@@ -1,116 +1,69 @@
 package com.br.model;
 
-import com.fasterxml.jackson.annotation.JsonIgnore; // NOVO IMPORT NECESSÁRIO
+import java.util.List;
+
+import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
+
 import jakarta.persistence.*;
-import java.time.LocalDate;
 
 @Entity
-@Table(name = "certificado_digital")
+@Table(name="certificadodigital")
 public class CertificadoDigital {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "nome_produto")
-    private String nomeProduto;
+    @Column(name="nome")
+    private String nome;
 
-    @Column(name = "tipo_publico")
-    private String tipoPublico;
+    @Column(name="ativo")
+    private boolean ativo;
 
-    @Column(name = "validade_meses")
-    private Integer validadeMeses;
-
-    private Double preco;
-
-    @Column(name = "data_validade")
-    private LocalDate dataValidade; // Usar LocalDate para o tipo DATE do Postgres
-
-    private Boolean ativo;
-
-    // Relacionamento N:1 com Orcamento (lado proprietário - Owner)
-    // CORREÇÃO: Usar @JsonIgnore para evitar recursão infinita na serialização JSON.
-    @JsonIgnore // <--- ADICIONADO
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "orcamento_id", nullable = false)
+    // RELACIONAMENTO COM ORCAMENTO (ManyToOne)
+    @ManyToOne
+    @JoinColumn(name = "orcamento_id")
+    @JsonBackReference
     private Orcamento orcamento;
-
-    // Relacionamento N:1 Opcional com Empresa (nulo se for PF)
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "empresa_id")
-    private Empresa empresa; // Opcional (Pode ser nulo)
-
-    // ... Getters e Setters ...
     
-	public Long getId() {
-		return id;
-	}
+    @ManyToOne
+    @JoinColumn(name = "produto_opcao_id")
+    @JsonIgnoreProperties({"certificados"})
+    private ProdutoOpcao produtoOpcao;
 
-	public void setId(Long id) {
-		this.id = id;
-	}
+    public ProdutoOpcao getProdutoOpcao() { return produtoOpcao; }
+    public void setProdutoOpcao(ProdutoOpcao produtoOpcao) { this.produtoOpcao = produtoOpcao; }
+    
+    @OneToMany(mappedBy="certificado", cascade=CascadeType.ALL)
+    private List<OpcaoValidade> opcoesValidade; // PF/PJ + 1,2,3 anos
 
-	public String getNomeProduto() {
-		return nomeProduto;
-	}
 
-	public void setNomeProduto(String nomeProduto) {
-		this.nomeProduto = nomeProduto;
-	}
+    // Construtor padrão
+    public CertificadoDigital() {
+        super();
+    }
 
-	public String getTipoPublico() {
-		return tipoPublico;
-	}
+    // Construtor com todos os campos, sem o Orcamento (pode setar depois)
+    public CertificadoDigital(Long id, String nome, boolean ativo) {
+        super();
+        this.id = id;
+        this.nome = nome;
+        this.ativo = ativo;
+    }
 
-	public void setTipoPublico(String tipoPublico) {
-		this.tipoPublico = tipoPublico;
-	}
+    // Getters e Setters
+    public Long getId() { return id; }
+    public void setId(Long id) { this.id = id; }
 
-	public Integer getValidadeMeses() {
-		return validadeMeses;
-	}
+    public String getNome() { return nome; }
+    public void setNome (String nome) { this.nome = nome; }
 
-	public void setValidadeMeses(Integer validadeMeses) {
-		this.validadeMeses = validadeMeses;
-	}
+    public boolean isAtivo() { return ativo; }
+    public void setAtivo(boolean ativo) { this.ativo = ativo; }
 
-	public Double getPreco() {
-		return preco;
-	}
+    public Orcamento getOrcamento() { return orcamento; }
+    public void setOrcamento(Orcamento orcamento) { this.orcamento = orcamento; }
 
-	public void setPreco(Double preco) {
-		this.preco = preco;
-	}
-
-	public LocalDate getDataValidade() {
-		return dataValidade;
-	}
-
-	public void setDataValidade(LocalDate dataValidade) {
-		this.dataValidade = dataValidade;
-	}
-
-	public Boolean getAtivo() {
-		return ativo;
-	}
-
-	public void setAtivo(Boolean ativo) {
-		this.ativo = ativo;
-	}
-
-	public Orcamento getOrcamento() {
-		return orcamento;
-	}
-
-	public void setOrcamento(Orcamento orcamento) {
-		this.orcamento = orcamento;
-	}
-
-	public Empresa getEmpresa() {
-		return empresa;
-	}
-
-	public void setEmpresa(Empresa empresa) {
-		this.empresa = empresa;
-	}
 }
