@@ -1,63 +1,150 @@
 package com.br.model;
 
-import jakarta.persistence.*;
-import java.math.BigDecimal;
-import java.util.List;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.ManyToOne;
 
-import com.fasterxml.jackson.annotation.JsonManagedReference;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
 
 @Entity
-@Table(name = "produto")
+@Table(name="produto")
 public class Produto {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    private Long codigo;
 
-    @Column(nullable = false)
+    @Column(name="nome")
     private String nome;
 
-    @Column(length = 255)
+    @Column(name="descricao")
     private String descricao;
 
-    // novo campo para corrigir o erro no controller
-    @Column(name = "preco_base", precision = 10, scale = 2)
-    private BigDecimal precoBase;
+    @Column(name="validade_meses")
+    private int validadeMeses;
 
-    @Column(nullable = false)
-    private boolean ativo = true;
+    @Column(name="preco")
+    private double preco;
 
-    // Relacionamento 1:N com ProdutoOpcao
-    @OneToMany(mappedBy = "produto", cascade = CascadeType.ALL)
-    @JsonManagedReference
-    private List<ProdutoOpcao> opcoes;
+    @Column(name="disponivel")
+    private boolean disponivel;
 
-    // Construtores
-    public Produto() {}
+    @Column(name="quantidade")
+    private int quantidade;
 
-    public Produto(String nome, String descricao, BigDecimal precoBase, boolean ativo) {
+    @Column(name="tipo_pessoa")
+    private String tipoPessoa; // PF ou PJ
+
+    @Column(name="modalidade")
+    private String modalidade; // Token Safenet, Cartão AWP, Arquivo A1…
+
+    @ManyToOne(optional = false, fetch = FetchType.EAGER)
+    private CategoriaCertificado categoriaCertificado;
+
+    // Construtor padrão
+    public Produto() {
+        super();
+    }
+
+    // Construtor completo
+    public Produto(Long codigo, String nome, String descricao, int validadeMeses, double preco,
+                   boolean disponivel, int quantidade, String tipoPessoa, String modalidade,
+                   CategoriaCertificado categoriaCertificado) {
+        super();
+        this.codigo = codigo;
         this.nome = nome;
         this.descricao = descricao;
-        this.precoBase = precoBase;
-        this.ativo = ativo;
+        this.validadeMeses = validadeMeses;
+        this.preco = preco;
+        this.disponivel = disponivel;
+        this.quantidade = quantidade;
+        this.tipoPessoa = tipoPessoa;
+        this.modalidade = modalidade;
+        this.categoriaCertificado = categoriaCertificado;
     }
 
     // Getters e Setters
-    public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
+    public Long getCodigo() {
+        return codigo;
+    }
 
-    public String getNome() { return nome; }
-    public void setNome(String nome) { this.nome = nome; }
+    public void setCodigo(Long codigo) {
+        this.codigo = codigo;
+    }
 
-    public String getDescricao() { return descricao; }
-    public void setDescricao(String descricao) { this.descricao = descricao; }
+    public String getNome() {
+        return nome;
+    }
 
-    public BigDecimal getPrecoBase() { return precoBase; }
-    public void setPrecoBase(BigDecimal precoBase) { this.precoBase = precoBase; }
+    public void setNome(String nome) {
+        this.nome = nome;
+    }
 
-    public boolean isAtivo() { return ativo; }
-    public void setAtivo(boolean ativo) { this.ativo = ativo; }
+    public String getDescricao() {
+        return descricao;
+    }
 
-    public List<ProdutoOpcao> getOpcoes() { return opcoes; }
-    public void setOpcoes(List<ProdutoOpcao> opcoes) { this.opcoes = opcoes; }
+    public void setDescricao(String descricao) {
+        this.descricao = descricao;
+    }
+
+    public int getValidadeMeses() {
+        return validadeMeses;
+    }
+
+    public void setValidadeMeses(int validadeMeses) {
+        this.validadeMeses = validadeMeses;
+    }
+
+    public double getPreco() {
+        return preco;
+    }
+
+    public void setPreco(double preco) {
+        this.preco = preco;
+    }
+
+    public boolean isDisponivel() {
+        return disponivel;
+    }
+
+    public void setDisponivel(boolean disponivel) {
+        this.disponivel = disponivel;
+    }
+
+    public int getQuantidade() {
+        return quantidade;
+    }
+
+    public void setQuantidade(int quantidade) {
+        this.quantidade = quantidade;
+    }
+
+    public String getTipoPessoa() {
+        return tipoPessoa;
+    }
+
+    public void setTipoPessoa(String tipoPessoa) {
+        this.tipoPessoa = tipoPessoa;
+    }
+
+    public String getModalidade() {
+        return modalidade;
+    }
+
+    public void setModalidade(String modalidade) {
+        this.modalidade = modalidade;
+    }
+
+    public CategoriaCertificado getCategoriaCertificado() {
+        return categoriaCertificado;
+    }
+
+    public void setCategoriaCertificado(CategoriaCertificado categoriaCertificado) {
+        this.categoriaCertificado = categoriaCertificado;
+    }
 }

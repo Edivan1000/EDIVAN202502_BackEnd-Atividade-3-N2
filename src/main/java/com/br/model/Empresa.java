@@ -1,41 +1,90 @@
 package com.br.model;
 
 import jakarta.persistence.*;
-import java.util.List;
+import java.io.Serializable;
+
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 
 @Entity
-public class Empresa {
+public class Empresa implements Serializable {
+	
+private static final long serialVersionUID = 1L;
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    private String nome;
+    private String razaoSocial;
+
+    private String nomeFantasia;
+
     private String cnpj;
 
-    // Um cliente pode estar vinculado a várias empresas e vice-versa (N:N)
-    @ManyToMany(mappedBy = "empresas")
-    private List<Cliente> clientes;
+    private String email;
 
-    // Construtores
-    public Empresa() {}
+    private String telefone;
 
-    public Empresa(String nome, String cnpj) {
-        this.nome = nome;
+    @OneToOne(mappedBy = "empresa", cascade = CascadeType.ALL)
+    @JsonManagedReference
+    private EnderecoEmpresa endereco;
+
+    // GETTERS E SETTERS
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
+    }
+
+    public String getRazaoSocial() {
+        return razaoSocial;
+    }
+
+    public void setRazaoSocial(String razaoSocial) {
+        this.razaoSocial = razaoSocial;
+    }
+
+    public String getNomeFantasia() {
+        return nomeFantasia;
+    }
+
+    public void setNomeFantasia(String nomeFantasia) {
+        this.nomeFantasia = nomeFantasia;
+    }
+
+    public String getCnpj() {
+        return cnpj;
+    }
+
+    public void setCnpj(String cnpj) {
         this.cnpj = cnpj;
     }
 
-    // Getters e Setters
-    public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
+    public String getEmail() {
+        return email;
+    }
 
-    public String getNome() { return nome; }
-    public void setNome(String nome) { this.nome = nome; }
+    public void setEmail(String email) {
+        this.email = email;
+    }
 
-    public String getCnpj() { return cnpj; }
-    public void setCnpj(String cnpj) { this.cnpj = cnpj; }
+    public String getTelefone() {
+        return telefone;
+    }
 
-    public List<Cliente> getClientes() { return clientes; }
-    public void setClientes(List<Cliente> clientes) { this.clientes = clientes; }
+    public void setTelefone(String telefone) {
+        this.telefone = telefone;
+    }
 
+    public EnderecoEmpresa getEndereco() {
+        return endereco;
+    }
+
+    public void setEndereco(EnderecoEmpresa endereco) {
+        this.endereco = endereco;
+        if (endereco != null) {
+            endereco.setEmpresa(this);
+        }
+    }
 }

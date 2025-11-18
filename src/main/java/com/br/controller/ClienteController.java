@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -13,64 +14,59 @@ import com.br.model.Cliente;
 import com.br.repository.ClienteRepository;
 
 @RestController
-@RequestMapping("/ccliente")
+@RequestMapping("/ccliente/")
 @CrossOrigin(origins = "*")
 public class ClienteController {
 
-    // Injeção do repositório JPA
     @Autowired
-    private ClienteRepository autorep;
+    private ClienteRepository clienteRep;
 
-    // Listar todos os clientes
+    // LISTAR TODOS
     @GetMapping("/cliente")
     public List<Cliente> listar() {
-        // Exemplo de acesso: http://localhost:8080/ccliente/cliente
-        return autorep.findAll();
+        return clienteRep.findAll(Sort.by(Sort.Direction.DESC, "id"));
     }
 
-    // Consultar cliente por ID
+    // CONSULTAR POR ID
     @GetMapping("/cliente/{id}")
     public ResponseEntity<Cliente> consultar(@PathVariable Long id) {
-        Cliente auto = autorep.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Cliente não encontrado."));
-        return ResponseEntity.ok(auto);
+        Cliente cliente = clienteRep.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Cliente não encontrado: " + id));
+        return ResponseEntity.ok(cliente);
     }
 
-    // Incluir novo cliente
+    // INSERIR NOVO CLIENTE
     @PostMapping("/cliente")
     public Cliente incluir(@RequestBody Cliente cliente) {
-        return autorep.save(cliente);
+        return clienteRep.save(cliente);
     }
 
-    // Excluir cliente
+    // ALTERAR CLIENTE EXISTENTE
+    @PutMapping("/cliente/{id}")
+    public ResponseEntity<Cliente> alterar(@PathVariable Long id, @RequestBody Cliente clienteAtualizado) {
+        Cliente cliente = clienteRep.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Cliente não encontrado: " + id));
+
+        cliente.setNome(clienteAtualizado.getNome());
+        cliente.setCpfCnpj(clienteAtualizado.getCpfCnpj());
+        cliente.setEmail(clienteAtualizado.getEmail());
+        cliente.setTelefone(clienteAtualizado.getTelefone());
+        cliente.setEndereco(clienteAtualizado.getEndereco()); // Endereço atualizado via cascade
+
+        Cliente atualizado = clienteRep.save(cliente);
+        return ResponseEntity.ok(atualizado);
+    }
+
+    // EXCLUIR CLIENTE
     @DeleteMapping("/cliente/{id}")
     public ResponseEntity<Map<String, Boolean>> excluir(@PathVariable Long id) {
-        Cliente auto = autorep.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Cliente não encontrado."));
+        Cliente cliente = clienteRep.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Cliente não encontrado: " + id));
 
-        autorep.delete(auto);
+        clienteRep.delete(cliente);
 
         Map<String, Boolean> resposta = new HashMap<>();
-        resposta.put("Cliente excluído!", true);
+        resposta.put("Cliente excluído!", Boolean.TRUE);
         return ResponseEntity.ok(resposta);
-    }
-
-    // Alterar cliente existente
-    @PutMapping("/cliente/{id}")
-    public ResponseEntity<Cliente> alterar(@PathVariable Long id, @RequestBody Cliente cliente) {
-
-        Cliente auto = autorep.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Cliente não encontrado."));
-
-        // Atualiza os campos principais do cliente
-        auto.setNome(cliente.getNome());
-        auto.setEmail(cliente.getEmail());
-        auto.setTelefone(cliente.getTelefone());
-        auto.setCpfCnpj(cliente.getCpfCnpj());
-        auto.setEmpresas(cliente.getEmpresas());
-        auto.setOrcamentos(cliente.getOrcamentos());
-
-        Cliente atualizado = autorep.save(auto);
-        return ResponseEntity.ok(atualizado);
     }
 }

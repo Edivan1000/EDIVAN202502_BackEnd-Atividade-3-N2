@@ -1,21 +1,13 @@
 package com.br.controller;
 
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
+import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import com.br.exception.ResourceNotFoundException;
 import com.br.model.Orcamento;
-import com.br.model.Cliente;
-import com.br.model.CertificadoDigital;
 import com.br.repository.OrcamentoRepository;
-import com.br.repository.ClienteRepository;
-import com.br.repository.CertificadoDigitalRepository;
 
 @RestController
 @RequestMapping("/corcamento")
@@ -23,87 +15,55 @@ import com.br.repository.CertificadoDigitalRepository;
 public class OrcamentoController {
 
     @Autowired
-    private OrcamentoRepository autorep;
+    private OrcamentoRepository orcamentoRepository;
 
-    @Autowired
-    private ClienteRepository clienteRepository;
-
-    @Autowired
-    private CertificadoDigitalRepository certificadoDigitalRepository;
-
-    // Listar todos
-    @GetMapping("/orcamento")
+    // LISTAR TODOS OS ORÇAMENTOS
+    @GetMapping
     public List<Orcamento> listar() {
-        return autorep.findAll();
+        return orcamentoRepository.findAll();
     }
 
-    // Consultar por ID
-    @GetMapping("/orcamento/{id}")
-    public ResponseEntity<Orcamento> consultar(@PathVariable Long id) {
-        Orcamento auto = autorep.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Orçamento não encontrado."));
-        return ResponseEntity.ok(auto);
+    // CONSULTAR POR ID
+    @GetMapping("/{id}")
+    public Optional<Orcamento> buscarPorId(@PathVariable Long id) {
+        return orcamentoRepository.findById(id);
     }
 
-    // Incluir novo
-    @PostMapping("/orcamento")
-    public ResponseEntity<Orcamento> incluir(@RequestBody Orcamento orcamento) {
-        // Buscar cliente existente
-        Cliente cliente = clienteRepository.findById(orcamento.getCliente().getId())
-                .orElseThrow(() -> new RuntimeException("Cliente não encontrado"));
+    // INSERIR NOVO ORÇAMENTO
+    @PostMapping
+    public Orcamento incluir(@RequestBody Orcamento orcamento) {
+        // CascadeType.ALL já salva os itens
+        return orcamentoRepository.save(orcamento);
+    }
 
-        // Buscar certificados existentes
-        List<CertificadoDigital> certificados = new ArrayList<>();
-        for (CertificadoDigital cert : orcamento.getCertificados()) {
-            CertificadoDigital existente = certificadoDigitalRepository.findById(cert.getId())
-                    .orElseThrow(() -> new RuntimeException("Certificado não encontrado"));
-            certificados.add(existente);
+    // ALTERAR UM ORÇAMENTO EXISTENTE
+    @PutMapping("/{id}")
+    public Orcamento alterar(@PathVariable Long id, @RequestBody Orcamento orcamentoAtualizado) {
+        return orcamentoRepository.findById(id)
+                .map(o -> {
+                    o.setDataOrcamento(orcamentoAtualizado.getDataOrcamento());
+                    o.setTotalOrcamento(orcamentoAtualizado.getTotalOrcamento());
+
+                    // Atualiza itens mantendo coerência bidirecional
+                    o.getItens().clear();
+                    if (orcamentoAtualizado.getItens() != null) {
+                        for (var item : orcamentoAtualizado.getItens()) {
+                            item.setOrcamento(o); // mantém o owner correto
+                            o.getItens().add(item);
+                        }
+                    }
+
+                    return orcamentoRepository.save(o);
+                })
+                .orElseThrow(() -> new RuntimeException("Orçamento não encontrado!"));
+    }
+
+    // EXCLUIR
+    @DeleteMapping("/{id}")
+    public void excluir(@PathVariable Long id) {
+        if (!orcamentoRepository.existsById(id)) {
+            throw new RuntimeException("Orçamento não encontrado para exclusão!");
         }
-
-        // Reatribuir
-        orcamento.setCliente(cliente);
-        orcamento.setCertificados(certificados);
-
-        Orcamento salvo = autorep.save(orcamento);
-        return ResponseEntity.ok(salvo);
-    }
-
-    // Alterar existente
-    @PutMapping("/orcamento/{id}")
-    public ResponseEntity<Orcamento> alterar(@PathVariable Long id, @RequestBody Orcamento orcamento) {
-        Orcamento auto = autorep.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Orçamento não encontrado."));
-
-        auto.setDataSolicitacao(orcamento.getDataSolicitacao());
-        auto.setValorTotal(orcamento.getValorTotal());
-
-        // Atualiza cliente e certificados
-        Cliente cliente = clienteRepository.findById(orcamento.getCliente().getId())
-                .orElseThrow(() -> new RuntimeException("Cliente não encontrado"));
-        auto.setCliente(cliente);
-
-        List<CertificadoDigital> certificados = new ArrayList<>();
-        for (CertificadoDigital cert : orcamento.getCertificados()) {
-            CertificadoDigital existente = certificadoDigitalRepository.findById(cert.getId())
-                    .orElseThrow(() -> new RuntimeException("Certificado não encontrado"));
-            certificados.add(existente);
-        }
-        auto.setCertificados(certificados);
-
-        Orcamento atualizado = autorep.save(auto);
-        return ResponseEntity.ok(atualizado);
-    }
-
-    // Excluir
-    @DeleteMapping("/orcamento/{id}")
-    public ResponseEntity<Map<String, Boolean>> excluir(@PathVariable Long id) {
-        Orcamento auto = autorep.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Orçamento não encontrado."));
-
-        autorep.delete(auto);
-
-        Map<String, Boolean> resposta = new HashMap<>();
-        resposta.put("Orçamento excluído!", true);
-        return ResponseEntity.ok(resposta);
+        orcamentoRepository.deleteById(id);
     }
 }

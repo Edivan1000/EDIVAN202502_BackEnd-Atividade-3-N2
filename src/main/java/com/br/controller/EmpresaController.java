@@ -5,74 +5,69 @@ import java.util.List;
 import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.CrossOrigin;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import com.br.exception.ResourceNotFoundException;
 import com.br.model.Empresa;
 import com.br.repository.EmpresaRepository;
 
 @RestController
-@RequestMapping("/cempresa")
+@RequestMapping("/cempresa/")
 @CrossOrigin(origins = "*")
 public class EmpresaController {
 
     @Autowired
-    private EmpresaRepository empresaRepository;
+    private EmpresaRepository empresaRep;
 
-    // Listar todas as empresas
+    // LISTAR TODOS
     @GetMapping("/empresa")
     public List<Empresa> listar() {
-        // http://localhost:8080/cempresa/empresa (GET)
-        return empresaRepository.findAll();
+        return empresaRep.findAll(Sort.by(Sort.Direction.DESC, "id"));
     }
 
-    // Consultar empresa por ID
+    // CONSULTAR POR ID
     @GetMapping("/empresa/{id}")
     public ResponseEntity<Empresa> consultar(@PathVariable Long id) {
-        Empresa empresa = empresaRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Empresa não encontrada."));
+        Empresa empresa = empresaRep.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Empresa não encontrada: " + id));
         return ResponseEntity.ok(empresa);
     }
 
-    // Incluir nova empresa
+    // INSERIR NOVA EMPRESA
     @PostMapping("/empresa")
     public Empresa incluir(@RequestBody Empresa empresa) {
-        return empresaRepository.save(empresa);
+        return empresaRep.save(empresa);
     }
 
-    // Alterar dados da empresa
+    // ALTERAR EMPRESA EXISTENTE
     @PutMapping("/empresa/{id}")
     public ResponseEntity<Empresa> alterar(@PathVariable Long id, @RequestBody Empresa empresaAtualizada) {
-        Empresa empresa = empresaRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Empresa não encontrada."));
+        Empresa empresa = empresaRep.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Empresa não encontrada: " + id));
 
-        empresa.setNome(empresaAtualizada.getNome());
+        empresa.setRazaoSocial(empresaAtualizada.getRazaoSocial());
+        empresa.setNomeFantasia(empresaAtualizada.getNomeFantasia());
         empresa.setCnpj(empresaAtualizada.getCnpj());
-        empresa.setClientes(empresaAtualizada.getClientes());
+        empresa.setEmail(empresaAtualizada.getEmail());
+        empresa.setTelefone(empresaAtualizada.getTelefone());
+        empresa.setEndereco(empresaAtualizada.getEndereco()); // Endereço atualizado via cascade
 
-        Empresa atualizada = empresaRepository.save(empresa);
-        return ResponseEntity.ok(atualizada);
+        Empresa atualizado = empresaRep.save(empresa);
+        return ResponseEntity.ok(atualizado);
     }
 
-    // Excluir empresa
+    // EXCLUIR EMPRESA
     @DeleteMapping("/empresa/{id}")
     public ResponseEntity<Map<String, Boolean>> excluir(@PathVariable Long id) {
-        Empresa empresa = empresaRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Empresa não encontrada."));
+        Empresa empresa = empresaRep.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Empresa não encontrada: " + id));
 
-        empresaRepository.delete(empresa);
+        empresaRep.delete(empresa);
 
         Map<String, Boolean> resposta = new HashMap<>();
-        resposta.put("Empresa excluída!", true);
+        resposta.put("Empresa excluída!", Boolean.TRUE);
         return ResponseEntity.ok(resposta);
     }
 }

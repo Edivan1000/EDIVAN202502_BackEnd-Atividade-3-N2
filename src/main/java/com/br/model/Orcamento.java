@@ -1,57 +1,57 @@
 package com.br.model;
 
-import jakarta.persistence.*;
-import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
+import com.fasterxml.jackson.annotation.JsonManagedReference;
+
+import jakarta.persistence.*;
 
 @Entity
 public class Orcamento {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    private Long codigo;
 
-    private LocalDate dataSolicitacao;
+    private LocalDate dataOrcamento;
+    private Double totalOrcamento;
 
-    private BigDecimal valorTotal;
-
-    // Cada orçamento está ligado a um cliente (1:1)
-    @ManyToOne
-    @JoinColumn(name = "cliente_id")
-    @JsonIgnoreProperties({"orcamentos"}) // ignora lista de orçamentos dentro de cliente
-    private Cliente cliente;
-
-    // Um orçamento pode ter vários certificados digitais (1:N)
-    @OneToMany(mappedBy = "orcamento", cascade = CascadeType.ALL)
-    @JsonIgnoreProperties({"orcamento", "produtoOpcao", "produto"})
-    private List<CertificadoDigital> certificados;
-
-    // Construtores
-    public Orcamento() {}
-
-    public Orcamento(LocalDate dataSolicitacao, BigDecimal valorTotal, Cliente cliente, List<CertificadoDigital> certificados) {
-        this.dataSolicitacao = dataSolicitacao;
-        this.valorTotal = valorTotal;
-        this.cliente = cliente;
-        this.certificados = certificados;
-    }
+    // 🔗 Relacionamento 1:N com ItensOrcamento
+    @OneToMany(mappedBy = "orcamento", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    @JsonManagedReference
+    private List<ItensOrcamento> itens;
 
     // Getters e Setters
-    public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
+    public Long getCodigo() {
+        return codigo;
+    }
+    public void setCodigo(Long codigo) {
+        this.codigo = codigo;
+    }
 
-    public LocalDate getDataSolicitacao() { return dataSolicitacao; }
-    public void setDataSolicitacao(LocalDate dataSolicitacao) { this.dataSolicitacao = dataSolicitacao; }
+    public LocalDate getDataOrcamento() {
+        return dataOrcamento;
+    }
+    public void setDataOrcamento(LocalDate dataOrcamento) {
+        this.dataOrcamento = dataOrcamento;
+    }
 
-    public BigDecimal getValorTotal() { return valorTotal; }
-    public void setValorTotal(BigDecimal valorTotal) { this.valorTotal = valorTotal; }
+    public Double getTotalOrcamento() {
+        return totalOrcamento;
+    }
+    public void setTotalOrcamento(Double totalOrcamento) {
+        this.totalOrcamento = totalOrcamento;
+    }
 
-    public Cliente getCliente() { return cliente; }
-    public void setCliente(Cliente cliente) { this.cliente = cliente; }
+    public List<ItensOrcamento> getItens() {
+        return itens;
+    }
+    public void setItens(List<ItensOrcamento> itens) {
+        this.itens = itens;
 
-    public List<CertificadoDigital> getCertificados() { return certificados; }
-    public void setCertificados(List<CertificadoDigital> certificados) { this.certificados = certificados; }
-
+        if (itens != null) {
+            itens.forEach(i -> i.setOrcamento(this));
+        }
+    }
 }
